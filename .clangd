@@ -1,0 +1,5 @@
+CompileFlags:
+  Add:
+    - -xc
+    - -std=c11
+    - -ISources/msg_server

@@ -1,0 +1,26 @@
+#+title: NetLogPublisher
+#+author: Oliver Epper
+#+email: oliver.epper@gmail.com
+#+language: en
+#+options: ':t toc:nil author:t email:t
+
+~msg_server~ implements a C-API that can open an UDP port and call an installed callback for incoming messages.  ~LogServer~ implements a Combine Publisher that uses this API.
+
+The idea is to make it very easy to test your FRP pipelines.  You can create a publisher like this:
+
+#+begin_src swift
+  LogServer(serviceName: "1979").messages
+    .sink { message in
+        print("Simon says: \(message)")
+    }.store(in: &cancellables)
+#+end_src
+
+To insert Moby Dick into your pipeline you can use ~nc~:
+
+#+begin_src shell
+  cat ./moby10b.txt | nc -u -w 0 ::1 1979
+#+end_src
+
+Enjoy 1.2 Mb of messages beeing delivered to your pipeline :-D
+
+Thank you, [[https://christiantietze.de][Christian Tietze]], for providing the code that makes life-cycle management with the Combine publisher so convenient.
