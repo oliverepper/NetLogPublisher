@@ -1,4 +1,5 @@
 #include "error_handling.h"
+#include "linked_list.h"
 #include "msg_server.h"
 #include <netdb.h>
 #include <netinet/in.h>
@@ -17,12 +18,8 @@ struct msg_server_instance_t {
   void *ctx;
 };
 
-typedef struct msg_server_node {
-  msg_server_t server;
-  struct msg_server_node *next;
-} msg_server_node_t;
+static _Atomic(list_node_t) atomic_head = NULL;
 
-static msg_server_node_t *head = NULL;
 static int kq = 0;
 static pthread_t evt_thread;
 
@@ -109,15 +106,19 @@ msg_server_t msg_server_create(const char *service_name) {
   return new_instance;
 }
 
-msg_server_t _get_server_for_servname(const char *service_name) {
-  msg_server_node_t *current = head;
-  while (current != NULL) {
-    if (strcmp(current->server->service_name, service_name) == 0)
-      return current->server;
-    current = current->next;
-  }
+bool _same_service_name(const void *left, const void *right) {
+  return strcmp(((msg_server_t)left)->service_name,
+                ((msg_server_t)right)->service_name) == 0;
+}
 
-  return NULL;
+msg_server_t _get_server_for_servname(const char *service_name) {
+  struct msg_server_instance_t search = {.service_name =
+                                               strdup(service_name)};
+  list_node_t found_node = list_find(&atomic_head, &search, _same_service_name) ;
+  free(search.service_name);
+  msg_server_t found_server = list_data(found_node);
+
+  return found_server;
 }
 
 void msg_server_add_callback(msg_server_t instance,
@@ -143,18 +144,9 @@ msg_server_t _create(const char *service_name) {
 }
 
 msg_server_t _remember(msg_server_t server) {
-  // TODO: Make this a lock-free and save function using the c-a-s
-  // idiom
-  msg_server_node_t *node = malloc(sizeof(msg_server_node_t));
-  if (!node) {
-    free(server->service_name);
-    free(server);
-  }
-  node->server = server;
-  node->next = head;
-  head = node;
-
-  return server;
+  list_node_t saved_node = list_insert(&atomic_head, server);
+  msg_server_t saved_server = list_data(saved_node);
+  return saved_server;
 }
 
 
