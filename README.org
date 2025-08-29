@@ -6,7 +6,7 @@
 
 ~msg_server~ implements a C-API that can open an UDP port and call an installed callback for incoming messages.  ~LogServer~ implements a Combine Publisher that uses this API.
 
-The idea is to make it very easy to test your FRP pipelines.  You can create a publisher like this:
+The idea is to make it very easy to test your FRP (I know, it's not really FRP) pipelines.  You can create a publisher like this:
 
 #+begin_src swift
   LogServer(serviceName: "1979").messages
